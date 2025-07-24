@@ -26,3 +26,6 @@ This is a mini-project using **FastAPI**, **Pydantic**, **SQLAlchemy**, and **My
 ```bash
 git clone https://github.com/jpshaw111/pydanticfastapi.git
 cd pydanticfastapi
+
+
+
