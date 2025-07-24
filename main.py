@@ -1,30 +1,35 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, EmailStr, Field
-from typing import List
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from database import SessionLocal, engine
+import models, schemas
+
+# Create tables in DB
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# In-memory user storage (like a temp database)
-users_db = []
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# Pydantic Model
-class User(BaseModel):
-    name: str = Field(..., min_length=2, max_length=50)
-    age: int = Field(..., gt=0, lt=120)
-    email: EmailStr
+# POST: Create User
+@app.post("/users", response_model=schemas.UserOut)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # Check duplicate
+    if db.query(models.User).filter(models.User.email == user.email).first():
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
 
-# Add User
-@app.post("/users")
-def create_user(user: User):
-    # Check if email already exists
-    for u in users_db:
-        if u['email'] == user.email:
-            raise HTTPException(status_code=400, detail="Email already exists")
-
-    users_db.append(user.dict())
-    return {"message": "User added successfully", "user": user}
-
-# Get all users
-@app.get("/users", response_model=List[User])
-def get_users():
-    return users_db
+# GET: List Users
+@app.get("/users", response_model=list[schemas.UserOut])
+def get_users(db: Session = Depends(get_db)):
+    return db.query(models.User).all()
