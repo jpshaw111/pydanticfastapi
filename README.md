@@ -28,4 +28,15 @@ git clone https://github.com/jpshaw111/pydanticfastapi.git
 cd pydanticfastapi
 
 
+python -m venv venv
+# On Linux/macOS
+source venv/bin/activate
+# On Windows
+venv\Scripts\activate
+
+pip install fastapi uvicorn sqlalchemy pymysql pydantic email-validator
+
+
+uvicorn main:app --reload
+
 
